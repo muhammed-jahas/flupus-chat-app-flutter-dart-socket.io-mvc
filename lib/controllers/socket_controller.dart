@@ -9,8 +9,11 @@ class SocketManager {
   }
 
   SocketManager._internal() {
-    socket = IO.io('http://10.4.2.58:4000', <String, dynamic>{
+    socket = IO.io('https://flupus-server.onrender.com', <String, dynamic>{
       'transports': ['websocket'],
     });
+    // socket = IO.io('http://10.4.2.58:4000', <String, dynamic>{
+    //   'transports': ['websocket'],
+    // });
   }
 }
