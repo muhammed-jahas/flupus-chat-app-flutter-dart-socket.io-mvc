@@ -128,11 +128,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
             ),
             trailing: CircleAvatar(
               radius: 20,
-              backgroundColor: AppColors.primaryColor.withOpacity(.07),
+              backgroundColor: Colors.green.withOpacity(.2),
               child: Text(
                 '${totalMessages}',
                 style: TextStyle(
-                    color: AppColors.primaryColor,
+                    color: Colors.green.shade50,
                     fontWeight: FontWeight.normal,
                     fontSize: 14),
               ),

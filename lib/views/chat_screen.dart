@@ -4,6 +4,7 @@ import 'package:flupus/data/shared_preferences.dart';
 import 'package:flupus/models/chat_entry.dart';
 import 'package:flupus/models/chat_message_model.dart';
 import 'package:flupus/resources/app_colors.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
@@ -24,7 +25,7 @@ class _ChatScreenState extends State<ChatScreen> {
   List<ChatMessage> messages = [];
   String username = '';
   bool showEmojiPicker = false;
-
+  ScrollController _scrollController = ScrollController();
   @override
   void initState() {
     super.initState();
@@ -39,9 +40,17 @@ class _ChatScreenState extends State<ChatScreen> {
   void handleMessage(dynamic data) {
     print('Received message: $data');
     if (data is Map<String, dynamic>) {
+      final message = ChatMessage.fromJson(data);
       if (mounted) {
-        final message = ChatMessage.fromJson(data);
-        addMessageToList(message);
+        setState(() {
+          messages.add(message);
+          // Scroll to the bottom when a new message is added
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent + 500,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        });
       }
     }
   }
@@ -49,33 +58,25 @@ class _ChatScreenState extends State<ChatScreen> {
   void handleLoadMessages(dynamic data) {
     print('Received loadMessages: $data');
     if (data is List) {
+      List<ChatMessage> loadedMessages =
+          data.map((item) => ChatMessage.fromJson(item)).toList();
       if (mounted) {
         setState(() {
           messages.clear(); // Clear existing messages
-          addMessagesToList(
-              data.map((item) => ChatMessage.fromJson(item)).toList());
+          messages.addAll(loadedMessages);
         });
       }
     }
   }
 
-  void addMessageToList(ChatMessage message) {
-    setState(() {
-      messages.add(message);
-    });
-  }
-
-  void addMessagesToList(List<ChatMessage> newMessages) {
-    setState(() {
-      messages.addAll(newMessages);
-    });
-  }
-
   void fetchUserName() async {
     String? fetchname = await SharedPref.instance.getUserName();
-    setState(() {
-      username = fetchname ?? '';
-    });
+    String userName = fetchname ?? '';
+    if (mounted) {
+      setState(() {
+        username = userName;
+      });
+    }
   }
 
   @override
@@ -100,8 +101,9 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             SizedBox(height: 10),
             Expanded(
-              child: ListView.builder(
-                shrinkWrap: true,
+              child: ListView.separated(
+                controller: _scrollController,
+                separatorBuilder: (context, index) => SizedBox(),
                 padding: EdgeInsets.symmetric(horizontal: 15),
                 itemCount: messages.length,
                 itemBuilder: (context, index) {
@@ -169,21 +171,24 @@ class _ChatScreenState extends State<ChatScreen> {
             if (showEmojiPicker)
               EmojiPicker(
                 config: Config(
-                    categoryViewConfig: CategoryViewConfig(
-                      backgroundColor: Colors.grey.shade900,
-                    ),
-                    bottomActionBarConfig: BottomActionBarConfig(
-                        backgroundColor: Colors.grey.shade900,
-                        buttonColor: AppColors.primaryColor,
-                        enabled: false),
-                    emojiViewConfig: EmojiViewConfig(
-                        backgroundColor: Colors.black26,
-                        gridPadding: EdgeInsets.all(4),
-                        horizontalSpacing: 6,
-                        columns: 8),
-                    skinToneConfig: SkinToneConfig(
-                      dialogBackgroundColor: Colors.black12,
-                    )),
+                  categoryViewConfig: CategoryViewConfig(
+                    backgroundColor: Colors.grey.shade900,
+                  ),
+                  bottomActionBarConfig: BottomActionBarConfig(
+                    backgroundColor: Colors.grey.shade900,
+                    buttonColor: AppColors.primaryColor,
+                    enabled: false,
+                  ),
+                  emojiViewConfig: EmojiViewConfig(
+                    backgroundColor: Colors.black26,
+                    gridPadding: EdgeInsets.all(4),
+                    horizontalSpacing: 6,
+                    columns: 8,
+                  ),
+                  skinToneConfig: SkinToneConfig(
+                    dialogBackgroundColor: Colors.black12,
+                  ),
+                ),
                 // Emoji picker configuration
                 onEmojiSelected: (category, emoji) {
                   // Replace the hint text with the selected emoji
